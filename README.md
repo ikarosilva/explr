@@ -153,6 +153,7 @@ docker run --shm-size 50G --runtime=nvidia --privileged -it \
   -v ~/PycharmProjects:/projects \
   --rm kaggle:torch bash
 
+
 # Inside container
 cd /git/explr
 pip install -e .
@@ -162,7 +163,26 @@ mlflow server --host 0.0.0.0 --port 5000 &
 
 # Run your experiment
 python examples/pytorch_example.py
+
+# Stop MLflow server when done (optional - data persists regardless)
+pkill -f "mlflow server"
 ```
+
+### VS Code Dev Containers
+
+You can attach VS Code directly to a running Docker container for full IDE support (debugging, IntelliSense, etc.):
+
+1. Install the **Dev Containers** extension in VS Code
+2. Start the Docker container (see above)
+3. Open Command Palette (`Ctrl+Shift+P`)
+4. Select **Dev Containers: Attach to Running Container...**
+5. Select your `kaggle:torch` container
+6. In the new VS Code window, click **Open Folder** and navigate to `/git/explr`
+7. Install the **Python** extension (`Ctrl+Shift+X`, search "Python" by Microsoft)
+8. Select the Python interpreter (`Ctrl+Shift+P` → "Python: Select Interpreter" → choose `/opt/conda/bin/python` or similar)
+9. Run scripts using the Play button (top right) or debug with F5
+
+The project includes VS Code settings (`.vscode/settings.json`) that ensure scripts always run from the workspace root directory, regardless of which file you're editing. The attached VS Code window runs entirely inside the container, with access to the container's Python interpreter, GPU, and all installed packages.
 
 ### Docker Commands via Makefile
 
@@ -223,6 +243,57 @@ config = ExperimentConfig(
         n_trials=100
     )
 )
+```
+
+## MLflow Server Management
+
+The framework automatically manages the MLflow tracking server for you.
+
+### Auto-Start Behavior (Default)
+
+When `auto_start: true` (the default), the framework:
+
+1. Checks if an MLflow server is already running on the configured port
+2. If not running, automatically starts one as a subprocess
+3. Automatically stops the server when your script exits (via `atexit` handler)
+
+This means you can simply run your experiment without manually starting MLflow:
+
+```bash
+python examples/two_moons.py
+# MLflow server starts automatically, runs experiment, then stops on exit
+```
+
+### Using an External Server
+
+If you start MLflow manually before running your experiment, the framework detects it and reuses the existing server without stopping it when your script exits:
+
+```bash
+# Start server manually (stays running)
+mlflow server --host 0.0.0.0 --port 5000 &
+
+# Run experiments (server keeps running after script exits)
+python examples/two_moons.py
+
+# Stop when you're done
+pkill -f "mlflow server"
+```
+
+### Disabling Auto-Start
+
+To disable auto-start and require a pre-running server:
+
+```yaml
+mlflow:
+  auto_start: false
+  tracking_uri: "http://localhost:5000"
+```
+
+Or programmatically:
+
+```python
+config = ExperimentConfig(name="my_experiment")
+config.mlflow.auto_start = False
 ```
 
 ## Project Structure
