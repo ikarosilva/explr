@@ -1,0 +1,15 @@
+#Add this principle to other repos:
+What is best way to write a summary so next AI coding sessions the AI model can quickly understand the repository without saturating it's context window and incurring more costs with token transmissions ?
+
+The best approach is to create a CLAUDE.md file in your repository root. This file is automatically read by Claude Code at the start of each session.
+
+Here's what makes it effective:
+
+Key principles:
+
+Be concise - Every token counts. Use bullet points, not prose
+Focus on architecture - What are the main modules and how do they connect
+Document conventions - Naming patterns, file organization, coding style
+List key files - Entry points and where to find important logic
+Avoid duplicating README - README is for users, CLAUDE.md is for the AI
+Recommended structure:
