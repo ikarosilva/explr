@@ -122,6 +122,10 @@ def main():
     print(f"Scanning directory: {scan_dir}")
 
     for root, dirs, files in os.walk(scan_dir, topdown=True):
+        # Explicitly ignore .git directory to prevent scanning git internals/config
+        if ".git" in dirs:
+            dirs.remove(".git")
+
         # Exclude ignored directories from further traversal
         dirs[:] = [d for d in dirs if not is_ignored(Path(root) / d, gitignore_patterns)]
 

@@ -184,6 +184,49 @@ You can attach VS Code directly to a running Docker container for full IDE suppo
 
 The project includes VS Code settings (`.vscode/settings.json`) that ensure scripts always run from the workspace root directory, regardless of which file you're editing. The attached VS Code window runs entirely inside the container, with access to the container's Python interpreter, GPU, and all installed packages.
 
+### Git Authentication in Docker
+
+To push code from inside the container, you need to authenticate.
+
+**Option 1: HTTPS with Personal Access Token (No Restart)**
+If you are already inside the container:
+1. Run `git config --global credential.helper store`
+2. Run `git push`
+3. Enter your GitHub username
+4. For the password, use a **Personal Access Token** (not your account password)
+
+> **Note:** If `git push` fails immediately with a 403 error without prompting, you may have a conflicting environment variable. Run `unset GITHUB_TOKEN` and `rm -f ~/.git-credentials`, then try again.
+> **Troubleshooting 403 Errors:**
+> If `git push` fails immediately without prompting, an invalid token is likely active in the environment. Run:
+> ```bash
+> unset GITHUB_TOKEN
+> git config --system --unset credential.helper
+> git config --global --unset credential.helper
+> git remote set-url origin https://<USERNAME>@github.com/<USERNAME>/explr.git
+> ```
+>
+> If you see "Permission denied", ensure your Personal Access Token has the **`repo`** scope selected.
+>
+> **Troubleshooting Hanging:**
+> If `git push` hangs without output, the credential helper may be stuck. Run `git config --global --unset credential.helper` to disable it, then try again.
+>
+> **Last Resort (Token in URL):**
+> If prompts are not appearing, embed your token directly in the remote URL (warning: this saves the token in plain text in `.git/config`):
+> `git remote set-url origin https://<YOUR_TOKEN>@github.com/<USERNAME>/explr.git`
+>
+> **Network Hanging (MTU):**
+> If it hangs during connection or "Writing objects", it is likely a Docker network packet size issue. Run:
+> `git config --global http.postBuffer 524288000`
+> `ip link set eth0 mtu 1400` (requires root)
+> `git config --global http.version HTTP/1.1`
+> `ip link set eth0 mtu 1200` (requires root)
+
+**Option 2: Mount Host Credentials (Requires Restart)**
+Add these flags to your `docker run` command to share host credentials:
+```bash
+-v ~/.gitconfig:/root/.gitconfig -v ~/.git-credentials:/root/.git-credentials
+```
+
 ### Docker Commands via Makefile
 
 ```bash
