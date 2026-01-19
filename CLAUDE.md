@@ -1,3 +1,62 @@
+# Project: explr
+
+## Overview
+Deep learning training framework with MLflow experiment tracking and hyperparameter tuning (Optuna/Ray Tune). Python 3.10+ package. Designed for Docker environments with NVIDIA GPU support (RTX 5090/Blackwell).
+
+## Architecture
+- **[core/](explr/core/)** - Protocol definitions, config dataclasses
+  - `TrainingContext`: Input to user's `train_model()` (hyperparameters, tracker, device)
+  - `TrainingResult`: Return value (primary_metric, artifacts, metadata)
+  - `ExperimentConfig`: Main config (MLflow, tuning, hyperparams)
+- **[tracking/](explr/tracking/)** - MLflow integration
+  - `ExplrTracker`: MLflow client wrapper (log_metric, log_artifact, etc.)
+  - `MLflowServer`: Auto-start/manage MLflow server subprocess
+- **[tuning/](explr/tuning/)** - Hyperparameter optimization
+  - `OptunaTuner`, `RayTuneTuner`: Backend implementations
+  - `SearchSpaceBuilder`: DSL for search space definitions
+- **[runner/](explr/runner/)** - Orchestration and CLI
+  - `Experiment`: Main orchestrator (run single trial or tune)
+  - `cli.py`: CLI commands (run, tune, mlflow-ui, gpu-info, verify)
+- **[frameworks/](explr/frameworks/)** - PyTorch/TensorFlow helpers
+- **[utils/](explr/utils/)** - GPU memory limits, reproducibility (seeding), environment verification
+
+## User Contract
+User implements: `def train_model(ctx: TrainingContext) -> TrainingResult`
+Framework provides: hyperparameters, MLflow tracker, device info, paths
+
+## Entry Points
+- **API**: `run_experiment(train_fn, config)` in [runner/experiment.py](explr/runner/experiment.py)
+- **CLI**: `explr` command in [runner/cli.py](explr/runner/cli.py)
+- **Exports**: See [\_\_init\_\_.py](explr/__init__.py)
+
+## Key Files
+- [pyproject.toml](pyproject.toml) - Package metadata, dependencies, CLI entrypoint
+- [explr/core/protocols.py](explr/core/protocols.py) - Core data structures
+- [explr/runner/experiment.py](explr/runner/experiment.py) - Main orchestrator
+- [configs/example.yaml](configs/example.yaml) - Example configuration
+- [examples/](examples/) - PyTorch/TensorFlow usage examples
+- [Dockerfile](Dockerfile) - Container image definition
+- [docker-compose.yml](docker-compose.yml) - MLflow + training services
+
+## Docker Environment
+- Base image: `kaggle:torch` (pre-built with PyTorch, CUDA 12.8, RTX 5090 support)
+- MLflow runs on port 5000, Jupyter on port 8888
+- Mount: `~/git:/git`, `~/PycharmProjects:/projects`
+- VS Code Dev Containers supported (attach to running container)
+- Git auth: credential helper or mount host credentials
+
+## Conventions
+- Config via YAML or dataclasses (`ExperimentConfig`)
+- Auto-start MLflow server (port 5000) if not running
+- Default GPU memory limit: 24GB (leaves 8GB for system on 32GB RTX 5090)
+- Default seed: 42 (reproducibility)
+- Checkpoint dir: `./checkpoints`, Artifact dir: `./artifacts`
+
+## Update Instructions
+**IMPORTANT**: When making significant changes or adding features:
+1. Update this project summary section in CLAUDE.md if architecture changes
+2. Update [README.md](README.md) if user-facing API/CLI changes
+
 # Security Rules
 
 NEVER display, cat, echo, read, or print the contents of files that may contain secrets, including:
